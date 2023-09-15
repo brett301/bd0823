@@ -1,10 +1,13 @@
+package main.java;
+
+import java.util.Calendar;
 import java.util.Date;
 
-public class tool {
+public class Tool {
 	// Base class for Chainsaw, Ladder, Jackhammer
 
 	public enum TOOL_CODES { CHNS, LADW, JAKD, JAKR };
-	public enum TOOL_TYPES { chainsaw, ladder,jackhammer };
+	public enum TOOL_TYPES { chainsaw, ladder, jackhammer };
 	public enum BRANDS { Stihl, Werner, DeWalt, Ridgid };
 
 	private String toolCode;
@@ -12,17 +15,19 @@ public class tool {
 	private String brand;
 	private double dailyCharge;
 
+	public static double finalCost;
+
 	private boolean hasHolidayCharge;
 	private boolean hasWeekdayCharge;
 	private boolean hasWeekendCharge;
 
-	public static void main(String[] args) {
-		tool chainsaw1 = new Chainsaw();
-		System.out.println(chainsaw1.getBrand());
+	public static void checkout(Tool tool, int rentalDays, int discount, Date checkoutDate) throws Exception {
+		RentalAgreement rentalAgreement = new RentalAgreement(tool, rentalDays, discount, checkoutDate);
+		finalCost = rentalAgreement.getFinalCharge();
 	}
 
-	public void checkout(String toolCode, int rentalDays, int discount, Date checkoutDate) {
-		RentalAgreement ra = new RentalAgreement(this, rentalDays, discount, checkoutDate);
+	public double getFinalCost() {
+		return finalCost;
 	}
 
 	public void setToolCode(String str) {
@@ -38,7 +43,7 @@ public class tool {
 	}
 
 	public String getToolType() {
-		return toolCode;
+		return toolType;
 	}
 
 	public void setBrand(String str) {
@@ -57,24 +62,24 @@ public class tool {
 		return dailyCharge;
 	}
 
-	public void setWeekdayCharge(boolean hasWeekdayCharge) {
-		hasWeekdayCharge = hasWeekdayCharge;
+	public void setWeekdayCharge(boolean weekdayCharge) {
+		hasWeekdayCharge = weekdayCharge;
 	}
 
 	public boolean hasWeekdayCharge() {
 		return hasWeekdayCharge;
 	}
 
-	public void setWeekendCharge(boolean hasWeekendCharge) {
-		hasWeekendCharge = hasWeekendCharge;
+	public void setWeekendCharge(boolean weekendCharge) {
+		hasWeekendCharge = weekendCharge;
 	}
 
 	public boolean hasWeekendCharge() {
 		return hasWeekendCharge;
 	}
 
-	public void setHolidayCharge(boolean hasHolidayCharge) {
-		hasHolidayCharge = hasHolidayCharge;
+	public void setHolidayCharge(boolean holidayCharge) {
+		hasHolidayCharge = holidayCharge;
 	}
 
 	public boolean hasHolidayCharge() {

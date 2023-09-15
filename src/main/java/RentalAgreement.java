@@ -1,16 +1,15 @@
+package main.java;
+
 import java.util.logging.Logger;
 import java.util.Date;
-import java.time.LocalDate;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.time.LocalDate;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.*;
-import java.util.stream.Stream;
-import java.util.Calendar;
+import static java.time.temporal.TemporalAdjusters.firstInMonth;
+
 import java.time.DayOfWeek;
-import java.util.stream.*;
 
 
 public class RentalAgreement {
@@ -23,7 +22,7 @@ public class RentalAgreement {
 	// private double dailyCharge;
 
 	// private Date checkoutDate;
-	private int discountPercentage;  // whole number in range [0, 100]
+	private int discountPercent;  // whole number in range [0, 100]
 	private int rentalDays;
 
 
@@ -33,7 +32,8 @@ public class RentalAgreement {
 
 	private int chargeDays; // rental days - nonbillable days
 	private double discountAmount = 0.00;
-	private Date dueDate;
+	private LocalDate endDate;
+	private LocalDate startDate;
 	private double finalCharge = 0.00;
 	private double preDiscountCharge;
 	
@@ -60,57 +60,57 @@ public class RentalAgreement {
 			● Final charge - Calculated as pre-discount charge - discount amount.
 	*/
 
-	public RentalAgreement(tool tool, int rentalDays, int discount, Date checkoutDate) {
+	public RentalAgreement(Tool tool, int rentalDays, int discount, Date checkoutDate) throws Exception {
 		finalCharge = checkout(tool, rentalDays, discount, checkoutDate);
+		System.out.print("RENTAL AGREEMENT " + "\n"
+		+ "TOOL CODE:" + tool.getToolCode() + "\n"
+		+ "TOOL TYPE:" + tool.getToolType() + "\n"
+		+ "TOOL BRAND:" + tool.getBrand() + "\n"
+		+ "RENTAL DAYS:" + rentalDays + "\n"
+		+ "CHECKOUT DATE:" + startDate + "\n"
+		+ "DUE DATE:" + endDate + "\n"
+		+ "DAILY RENTAL CHARGE:" + tool.getDailyCharge() + "\n"
+		+ "CHARGE DAYS:" + chargeDays + "\n"
+		+ "PRE DISCOUNT CHARGE:" + preDiscountCharge + "\n"
+		+ "DISCOUNT PERCENT:" + discountPercent + "\n"
+		+ "DISCOUNT AMOUNT:" + discountAmount + "\n"
+		+ "FINAL CHARGE:" + finalCharge + "\n\n");
 	}
 
-	public double checkout(tool tool, int rentalDays, int discount, Date date) {
+	public double checkout(Tool tool, int rentalDays, int discountPercentage, Date date) throws Exception {
 		if (rentalDays < 1) {
 			log.warning("ERROR: number of rental days is {}. "
 				+ "Please provide a number of rental days of at least 1");
-		} else if (discount < 0 || discount > 100) {
+			throw new Exception();
+		} else if (discountPercentage < 0 || discountPercentage > 100) {
 			log.warning("ERROR: discount percentage is {}. "
-				+ "Please provide a discount percent that is at least 0 and at most 100.");
+					+ "Please provide a discount percent that is at least 0 and at most 100.");
+			throw new Exception();
 		}
 
-		rentalDays = rentalDays;
-
-		discountPercentage = discount;
-		SimpleDateFormat dateFormatter1 = new SimpleDateFormat("YYYY-mm-dd");
+		SimpleDateFormat dateFormatter1 = new SimpleDateFormat("yyyy-MM-dd");
 		String startDateString = dateFormatter1.format(date);
-
-		preDiscountCharge = rentalDays * tool.getDailyCharge();
 
 		// End date is exclusive
 		// Ex):	Start = 08/23/2023, rental days = 3
 		//		Rental days are : 8/23, 8/24, 8/25
 		//		End date is: 8/26
-		LocalDate startDate = LocalDate.parse(startDateString);
-		LocalDate endDate = startDate.plusDays(rentalDays);
+		startDate = LocalDate.parse(startDateString);
+		endDate = startDate.plusDays(rentalDays);
 
-		if (tool.hasHolidayCharge()) {
-			determineHolidays(startDate.getYear());
-		}
+		determineHolidays(startDate.getYear());
 
 		chargeDays = determineChargeDays(tool, startDate, endDate, holidays);
-		finalCharge = tool.getDailyCharge() * chargeDays * (discount/100);
-		displayRentalAgreement(tool);
+		preDiscountCharge = chargeDays * tool.getDailyCharge();
+		discountPercent = discountPercentage;
+		finalCharge = tool.getDailyCharge() * chargeDays * ((double) (100 - discountPercentage) / 100);
+		discountAmount = tool.getDailyCharge() * chargeDays - finalCharge;
 		return finalCharge;
 	}
 
-	private int determineChargeDays(tool tool, LocalDate startDate,
-        LocalDate endDate,
-        Optional<List<LocalDate>> holidays) {
-		// if (tool.hasWeekdayCharge() && tool.hasWeekendCharge()) {
-		// 	return rentalDays;
-		// } else if (tool.hasWeekendCharge()) {
-		// 	return 2;
-		// } else if (tool.hasWeekdayCharge()) {
-		// 	return 10;
-		// } else {
-		// 	return 0;
-		// }
-
+	private int determineChargeDays(Tool tool, LocalDate startDate,
+									LocalDate endDate,
+									Optional<List<LocalDate>> holidays) {
 
 	    // Validate method arguments
 	    if (startDate == null || endDate == null) {
@@ -125,28 +125,47 @@ public class RentalAgreement {
 	    // Predicate 2: If a given date is a weekday
 	    Predicate<LocalDate> isWeekend = date -> date.getDayOfWeek() == DayOfWeek.SATURDAY
             || date.getDayOfWeek() == DayOfWeek.SUNDAY;
-	            // || date.getDayOfWeek() == Calendar.DAY_OF_WEEK.SUNDAY;
 
-	    // Iterate over stream of all dates and check each day against any weekday or holiday
-	    List<LocalDate> businessDays = startDate.datesUntil(endDate)
-	            .filter(isWeekend.or(isHoliday).negate())
-	            .collect(Collectors.toList());
-
+		List<LocalDate> businessDays = new ArrayList<>();
+		// Iterate over stream of all dates and check each day against any weekday or holiday
+	    if (!tool.hasWeekendCharge() && !tool.hasHolidayCharge()) {
+			businessDays = startDate.datesUntil(endDate)
+					.filter(isWeekend.or(isHoliday).negate())
+					.collect(Collectors.toList());
+		} else if (!tool.hasWeekendCharge()) {
+			businessDays = startDate.datesUntil(endDate)
+					.filter(isWeekend.negate())
+					.collect(Collectors.toList());
+		} else if (!tool.hasHolidayCharge()) {
+			businessDays = startDate.datesUntil(endDate)
+					.filter(isHoliday.negate())
+					.collect(Collectors.toList());
+		}
 	    return businessDays.size();
-
 	}
 
-	private void displayRentalAgreement(tool tool) {
-		log.info("RENTAL AGREEMENT");
-		log.info("Tool Code: " + tool.getToolCode());
-		log.info("Tool Type: " + tool.getToolType());
-		log.info("Tool Brand: " + tool.getBrand());
-		log.info("Percent " + String.valueOf(100 - discountPercentage) + "%");
-		log.info("Final Charge Amount: " + finalCharge);
-	}
+
 
 	private void determineHolidays(int year) {
-		holidays.get().add(LocalDate.of(year, 7, 4));
+		LocalDate julyFourth = LocalDate.of(year, 7, 4);
 
+		// If July Fourth is on hte weekend, the closest weekday is considered the holiday.
+		if (julyFourth.getDayOfWeek() == DayOfWeek.SUNDAY) {
+			holidays.get().add(LocalDate.of(year, 7, 5));
+		} else if (julyFourth.getDayOfWeek() == DayOfWeek.SATURDAY) {
+			holidays.get().add(LocalDate.of(year, 7, 3));
+		} else {
+			holidays.get().add(LocalDate.of(year, 7, 4));
+		}
+
+
+		// First Monday in September is also a holiday.
+		LocalDate septemberFirst = LocalDate.of(year, 9, 1);
+		LocalDate firstMondayInSeptember = septemberFirst.with(firstInMonth(DayOfWeek.MONDAY));
+		holidays.get().add(firstMondayInSeptember);
+	}
+
+	public double getFinalCharge() {
+		return finalCharge;
 	}
 }
