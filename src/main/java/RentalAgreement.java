@@ -1,5 +1,4 @@
 package main.java;
-
 import java.util.logging.Logger;
 import java.util.Date;
 import java.text.SimpleDateFormat;
@@ -8,35 +7,19 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.*;
 import static java.time.temporal.TemporalAdjusters.firstInMonth;
-
 import java.time.DayOfWeek;
 
 
 public class RentalAgreement {
-
 	private final static Logger log = Logger.getLogger(RentalAgreement.class.getName());
-
-	// private String toolBrand;
-	// private String toolCode;
-	// private String toolType;
-	// private double dailyCharge;
-
-	// private Date checkoutDate;
 	private int discountPercent;  // whole number in range [0, 100]
-	private int rentalDays;
-
-
-	// July 4th - or nearest weekday
-	// Labor Day - first monday in september
 	private static Optional<List<LocalDate>> holidays = Optional.of(new ArrayList<LocalDate>());
-
-	private int chargeDays; // rental days - nonbillable days
+	private int chargeDays; // rentalDays - nonBillableDays
 	private double discountAmount = 0.00;
 	private LocalDate endDate;
 	private LocalDate startDate;
 	private double finalCharge = 0.00;
 	private double preDiscountCharge;
-	
 
 	/*
 		Stored in passed in Tool object
@@ -90,12 +73,10 @@ public class RentalAgreement {
 
 		SimpleDateFormat dateFormatter1 = new SimpleDateFormat("yyyy-MM-dd");
 		String startDateString = dateFormatter1.format(date);
+		startDate = LocalDate.parse(startDateString);
 
 		// End date is exclusive
-		// Ex):	Start = 08/23/2023, rental days = 3
-		//		Rental days are : 8/23, 8/24, 8/25
-		//		End date is: 8/26
-		startDate = LocalDate.parse(startDateString);
+		// Ex):	Start = 08/23/2023, rental days = 3, Rental days are : 8/23, 8/24, 8/25, End date is: 8/26
 		endDate = startDate.plusDays(rentalDays);
 
 		determineHolidays(startDate.getYear());
@@ -107,27 +88,26 @@ public class RentalAgreement {
 		discountAmount = tool.getDailyCharge() * chargeDays - finalCharge;
 		return finalCharge;
 	}
-
 	private int determineChargeDays(Tool tool, LocalDate startDate,
 									LocalDate endDate,
 									Optional<List<LocalDate>> holidays) {
-
 	    // Validate method arguments
 	    if (startDate == null || endDate == null) {
 	        throw new IllegalArgumentException("Invalid method argument(s) " +
 	            "to countBusinessDaysBetween (" + startDate + "," + endDate + "," + holidays + ")");
 	    }
 
-	    // Predicate 1: If a given date is a holiday
+	    // If a given date is a holiday
 	    Predicate<LocalDate> isHoliday = date -> holidays.isPresent()
 	                && holidays.get().contains(date);
 
-	    // Predicate 2: If a given date is a weekday
+	    // If a given date is a weekday
 	    Predicate<LocalDate> isWeekend = date -> date.getDayOfWeek() == DayOfWeek.SATURDAY
             || date.getDayOfWeek() == DayOfWeek.SUNDAY;
 
 		List<LocalDate> businessDays = new ArrayList<>();
-		// Iterate over stream of all dates and check each day against any weekday or holiday
+		// First check if tool has weekend and holiday charge.
+		// Then filter out the dates that will not be charged.
 	    if (!tool.hasWeekendCharge() && !tool.hasHolidayCharge()) {
 			businessDays = startDate.datesUntil(endDate)
 					.filter(isWeekend.or(isHoliday).negate())
@@ -144,20 +124,19 @@ public class RentalAgreement {
 	    return businessDays.size();
 	}
 
-
-
 	private void determineHolidays(int year) {
 		LocalDate julyFourth = LocalDate.of(year, 7, 4);
 
-		// If July Fourth is on hte weekend, the closest weekday is considered the holiday.
-		if (julyFourth.getDayOfWeek() == DayOfWeek.SUNDAY) {
-			holidays.get().add(LocalDate.of(year, 7, 5));
-		} else if (julyFourth.getDayOfWeek() == DayOfWeek.SATURDAY) {
-			holidays.get().add(LocalDate.of(year, 7, 3));
-		} else {
-			holidays.get().add(LocalDate.of(year, 7, 4));
+		// If July Fourth is on the weekend, the closest weekday is considered the holiday.
+		if (holidays.isPresent()) {
+			if (julyFourth.getDayOfWeek() == DayOfWeek.SUNDAY) {
+				holidays.get().add(LocalDate.of(year, 7, 5));
+			} else if (julyFourth.getDayOfWeek() == DayOfWeek.SATURDAY) {
+				holidays.get().add(LocalDate.of(year, 7, 3));
+			} else {
+				holidays.get().add(LocalDate.of(year, 7, 4));
+			}
 		}
-
 
 		// First Monday in September is also a holiday.
 		LocalDate septemberFirst = LocalDate.of(year, 9, 1);

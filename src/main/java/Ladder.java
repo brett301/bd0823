@@ -21,6 +21,7 @@ public class Ladder extends Tool {
 		Calendar calendar = Calendar.getInstance();
 		calendar.set(year, month, day);
 		Date startDate = calendar.getTime();
-		checkout(this, rentalDays, discount, startDate);
+		RentalAgreement ra = new RentalAgreement(this, rentalDays, discount, startDate);
+		setRentalAgreement(ra);
 	}
 }

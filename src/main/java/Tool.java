@@ -14,20 +14,17 @@ public class Tool {
 	private String toolType;
 	private String brand;
 	private double dailyCharge;
-
-	public static double finalCost;
-
+	private static RentalAgreement rentalAgreement;
 	private boolean hasHolidayCharge;
 	private boolean hasWeekdayCharge;
 	private boolean hasWeekendCharge;
 
-	public static void checkout(Tool tool, int rentalDays, int discount, Date checkoutDate) throws Exception {
-		RentalAgreement rentalAgreement = new RentalAgreement(tool, rentalDays, discount, checkoutDate);
-		finalCost = rentalAgreement.getFinalCharge();
+	public RentalAgreement getRentalAgreement() {
+		return rentalAgreement;
 	}
 
-	public double getFinalCost() {
-		return finalCost;
+	public void setRentalAgreement(RentalAgreement ra) {
+		rentalAgreement = ra;
 	}
 
 	public void setToolCode(String str) {
@@ -85,5 +82,4 @@ public class Tool {
 	public boolean hasHolidayCharge() {
 		return hasHolidayCharge;
 	}
-	
 }

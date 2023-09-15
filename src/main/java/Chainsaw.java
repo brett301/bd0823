@@ -6,10 +6,6 @@ import java.util.Date;
 
 public class Chainsaw extends Tool {
 	private static final double dailyRate = 1.49;
-
-	private LocalDate date;
-
-
 	public Chainsaw() throws Exception {
 		// Default to January 1st, 2023 with 10 rental days and 0% discount
 		this(10, 0, 2023, Calendar.JANUARY, 1);
@@ -26,6 +22,7 @@ public class Chainsaw extends Tool {
 		Calendar calendar = Calendar.getInstance();
 		calendar.set(year, month, day);
 		Date startDate = calendar.getTime();
-		checkout(this, rentalDays, discount, startDate);
+		RentalAgreement ra = new RentalAgreement(this, rentalDays, discount, startDate);
+		setRentalAgreement(ra);
 	}
 }
