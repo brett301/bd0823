@@ -1,4 +1,4 @@
-package main.java.test;
+package main.test;
 
 import main.java.Chainsaw;
 import main.java.Jackhammer;
